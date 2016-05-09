@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
@@ -38,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         registerReceiver(N2IReceiver, makeIntentFilter());
-
     }
 
     private static IntentFilter makeIntentFilter() {
@@ -81,6 +81,16 @@ public class MainActivity extends AppCompatActivity {
                 String notification_text = intent.getStringExtra(N2INotificationListener.NOTIFICATION_TEXT);
                 Log.d(TAG, "Package Name: " +package_name);
                 Log.d(TAG, "Notification: " +notification_text);
+
+                StringBuilder s = new StringBuilder();
+                s.append(package_name);
+                s.append(": ");
+                s.append(notification_text);
+
+                Log.d(TAG, "Calling Async task");
+                SendNotificationTask task = new SendNotificationTask(s.toString());
+                task.execute();
+
             }
         }
     };
