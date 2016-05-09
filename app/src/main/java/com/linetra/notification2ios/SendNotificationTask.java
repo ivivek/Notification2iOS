@@ -28,9 +28,11 @@ import javax.net.ssl.HttpsURLConnection;
 public class SendNotificationTask extends AsyncTask {
     HttpsURLConnection conn;
     private String notification;
+    private String package_name;
 
-    public SendNotificationTask(String notification) {
+    public SendNotificationTask(String notification, String package_name) {
         this.notification = notification;
+        this.package_name = package_name;
     }
 
     @Override
@@ -50,6 +52,7 @@ public class SendNotificationTask extends AsyncTask {
             httpparams.add(new BasicNameValuePair("token", "aB2sRkp4uGaUaSkaDb16uAw5Zg6CpC"));
             httpparams.add(new BasicNameValuePair("user", "u6733ah4qaQLcM77roR7n3YMR9Y2jj"));
             httpparams.add(new BasicNameValuePair("message", notification));
+            httpparams.add(new BasicNameValuePair("title", package_name));
 
             OutputStream os = conn.getOutputStream();
             BufferedWriter writer = new BufferedWriter(

@@ -79,16 +79,27 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "ACTION_NEW_NOTIFICATION");
                 String package_name = intent.getStringExtra(N2INotificationListener.PACKAGE_NAME);
                 String notification_text = intent.getStringExtra(N2INotificationListener.NOTIFICATION_TEXT);
-                Log.d(TAG, "Package Name: " +package_name);
-                Log.d(TAG, "Notification: " +notification_text);
+                String notification_title = intent.getStringExtra(N2INotificationListener.NOTIFICATION_TITLE);
+                String notification_subtext = intent.getStringExtra(N2INotificationListener.NOTIFICATION_SUBTEXT);
+
+                Log.d(TAG, "Package Name: " + package_name);
+                Log.d(TAG, "Notification: " + notification_text);
 
                 StringBuilder s = new StringBuilder();
-                s.append(package_name);
-                s.append(": ");
-                s.append(notification_text);
+                if (notification_title != null) {
+                    s.append(notification_title);
+                }
+                if (notification_text != null) {
+                    s.append(" - ");
+                    s.append(notification_text);
+                }
+                if (notification_subtext != null) {
+                    s.append(" - ");
+                    s.append(notification_subtext);
+                }
 
                 Log.d(TAG, "Calling Async task");
-                SendNotificationTask task = new SendNotificationTask(s.toString());
+                SendNotificationTask task = new SendNotificationTask(s.toString(), package_name);
                 task.execute();
 
             }
