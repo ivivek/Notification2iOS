@@ -26,13 +26,18 @@ import javax.net.ssl.HttpsURLConnection;
  * Created by vivek on 9/5/16.
  */
 public class SendNotificationTask extends AsyncTask {
+    private static final String TAG = "SendNotificationTask";
     HttpsURLConnection conn;
     private String notification;
     private String package_name;
+    private String token;
+    private String userid;
 
-    public SendNotificationTask(String notification, String package_name) {
+    public SendNotificationTask(String notification, String package_name, String userid, String token) {
         this.notification = notification;
         this.package_name = package_name;
+        this.userid = userid;
+        this.token = token;
     }
 
     @Override
@@ -40,6 +45,12 @@ public class SendNotificationTask extends AsyncTask {
         Log.d("SendNotificationTask", "doInBackground");
 
         try {
+
+            if (token == null || userid == null) {
+                Log.e(TAG, "UserID/Token is not valid");
+                return null;
+            }
+
             URL url = new URL("https://api.pushover.net/1/messages.json");
             conn = (HttpsURLConnection) url.openConnection();
             conn.setReadTimeout(10000);
@@ -49,8 +60,8 @@ public class SendNotificationTask extends AsyncTask {
             conn.setDoOutput(true);
 
             List<NameValuePair> httpparams = new ArrayList<NameValuePair>();
-            httpparams.add(new BasicNameValuePair("token", "aB2sRkp4uGaUaSkaDb16uAw5Zg6CpC"));
-            httpparams.add(new BasicNameValuePair("user", "u6733ah4qaQLcM77roR7n3YMR9Y2jj"));
+            httpparams.add(new BasicNameValuePair("token", token));
+            httpparams.add(new BasicNameValuePair("user", userid));
             httpparams.add(new BasicNameValuePair("message", notification));
             httpparams.add(new BasicNameValuePair("title", package_name));
 

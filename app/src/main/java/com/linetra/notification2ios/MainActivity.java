@@ -12,11 +12,20 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
+    private static Button saveButton;
+    private static EditText editText_userid;
+    private static EditText editText_token;
+    private static String userID;
+    private static String token;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +48,26 @@ public class MainActivity extends AppCompatActivity {
         }
 
         registerReceiver(N2IReceiver, makeIntentFilter());
+
+        saveButton = (Button) findViewById(R.id.save_button);
+        editText_userid = (EditText) findViewById(R.id.editText1);
+        editText_token = (EditText) findViewById(R.id.editText2);
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (editText_userid.getText() == null || editText_token.getText() == null)
+                    Log.d(TAG, "Invalid UserID / Token");
+                else {
+                    editText_token.setCursorVisible(false);
+                    editText_token.setCursorVisible(false);
+                    userID = editText_userid.getText().toString();
+                    token = editText_token.getText().toString();
+                    Log.d(TAG, "UserID: " +userID);
+                    Log.d(TAG, "Token: " +token);
+                }
+
+            }
+        });
     }
 
     private static IntentFilter makeIntentFilter() {
@@ -99,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 Log.d(TAG, "Calling Async task");
-                SendNotificationTask task = new SendNotificationTask(s.toString(), package_name);
+                SendNotificationTask task = new SendNotificationTask(s.toString(), package_name, userID, token);
                 task.execute();
 
             }
