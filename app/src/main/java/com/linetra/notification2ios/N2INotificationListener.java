@@ -49,7 +49,10 @@ public class N2INotificationListener extends android.service.notification.Notifi
             intent.putExtra(PACKAGE_NAME, sbnNew.getPackageName());
         }
 
-        sendBroadcast(intent);
+        // Skipping notification from this app
+        if (!appName.equals("Notification2iOS"))
+            sendBroadcast(intent);
+
         Log.d(TAG, "onNotificationPosted: Application Name: " +appName);
         Log.d(TAG, "onNotificationPosted: Title: " +sbnNew.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE));
         Log.d(TAG, "onNotificationPosted: " + sbnNew.getPackageName()
@@ -61,7 +64,4 @@ public class N2INotificationListener extends android.service.notification.Notifi
     public void onNotificationRemoved(StatusBarNotification sbn) {
         Log.d(TAG,"onNotificationRemoved");
     }
-
-
-
 }
