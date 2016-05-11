@@ -1,6 +1,8 @@
 package com.linetra.notification2ios;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -10,6 +12,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.NotificationCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
@@ -33,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String PREFS_NAME = "N2I_PREFS";
     public static final String PREFS_USERID_KEY = "N2I_USERID";
     public static final String PREFS_TOKEN_KEY = "N2I_TOKEN";
-
+    public static int notificationID = 10001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,13 +94,30 @@ public class MainActivity extends AppCompatActivity {
                     save_prefs(context, userID, token);
                     Toast.makeText(MainActivity.this, "UserID & Token saved",
                             Toast.LENGTH_LONG).show();
-
                 }
             }
         });
 
-        SharedPreferences settings = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        Notification notification = new NotificationCompat.Builder(this)
+                .setContentTitle("Notification2iOS")
+                .setContentText("Sending all notifications to Pushover")
+                .setOnlyAlertOnce(true)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .build();
+        notification.flags |= Notification.FLAG_NO_CLEAR;
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(notificationID, notification);
 
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy");
+        super.onDestroy();
+        unregisterReceiver(N2IReceiver);
+        String ns = Context.NOTIFICATION_SERVICE;
+        NotificationManager nMgr = (NotificationManager) getApplicationContext().getSystemService(ns);
+        nMgr.cancel(notificationID);
     }
 
     public void get_prefs(Context context) {
