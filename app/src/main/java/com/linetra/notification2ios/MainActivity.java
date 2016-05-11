@@ -125,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
         String text;
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         userID = settings.getString(PREFS_USERID_KEY, null);
-        token = settings.getString(PREFS_USERID_KEY, null);
+        token = settings.getString(PREFS_TOKEN_KEY, null);
     }
 
     public void save_prefs(Context context, String userid, String token) {
