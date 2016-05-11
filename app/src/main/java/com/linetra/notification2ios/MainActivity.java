@@ -23,11 +23,25 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.NetworkResponse;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.apache.http.HttpStatus;
+
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private Activity context = this;
+    private static final String PUSHOVER_REQUEST_URL = "https://api.pushover.net/1/messages.json";
     private static Button saveButton;
     private static EditText editText_userid;
     private static EditText editText_token;
@@ -98,16 +112,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Notification notification = new NotificationCompat.Builder(this)
-                .setContentTitle("Notification2iOS")
-                .setContentText("Sending all notifications to Pushover")
-                .setOnlyAlertOnce(true)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .build();
-        notification.flags |= Notification.FLAG_NO_CLEAR;
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationManager.notify(notificationID, notification);
-
+        send_notification("Sending all notifications to Pushover");
     }
 
     @Override
@@ -168,14 +173,27 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private void send_notification(String notification) {
+        Notification notif = new NotificationCompat.Builder(this)
+                .setContentTitle("Notification2iOS")
+                .setContentText(notification)
+                .setOnlyAlertOnce(true)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .build();
+        notif.flags |= Notification.FLAG_NO_CLEAR;
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(notificationID, notif);
+
+    }
+
     private final BroadcastReceiver N2IReceiver = new BroadcastReceiver() {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(final Context context, Intent intent) {
             final String action = intent.getAction();
             Log.d(TAG, "Entered BroadcastReceiver");
             if (N2INotificationListener.ACTION_NEW_NOTIFICATION.equals(action)) {
                 Log.d(TAG, "ACTION_NEW_NOTIFICATION");
-                String package_name = intent.getStringExtra(N2INotificationListener.PACKAGE_NAME);
+                final String package_name = intent.getStringExtra(N2INotificationListener.PACKAGE_NAME);
                 String notification_text = intent.getStringExtra(N2INotificationListener.NOTIFICATION_TEXT);
                 String notification_title = intent.getStringExtra(N2INotificationListener.NOTIFICATION_TITLE);
                 String notification_subtext = intent.getStringExtra(N2INotificationListener.NOTIFICATION_SUBTEXT);
@@ -195,10 +213,46 @@ public class MainActivity extends AppCompatActivity {
                     s.append(" - ");
                     s.append(notification_subtext);
                 }
+                final String notification_full = s.toString();
 
                 Log.d(TAG, "Calling Async task");
-                SendNotificationTask task = new SendNotificationTask(s.toString(), package_name, userID, token);
-                task.execute();
+
+                StringRequest stringRequest = new StringRequest(Request.Method.POST, PUSHOVER_REQUEST_URL,
+                        new Response.Listener<String>() {
+                            @Override
+                            public void onResponse(String response) {
+                                Log.d(TAG, "HTTP POST Response: " +response);
+                            }
+                        },
+                        new Response.ErrorListener() {
+                            @Override
+                            public void onErrorResponse(VolleyError error) {
+                                Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_LONG).show();
+                                Log.d(TAG, "HTTP POST Error: " +error.toString());
+                                send_notification("Error sending notifications");
+                            }
+                        }){
+                    @Override
+                    protected Map<String,String> getParams(){
+                        Map<String,String> params = new HashMap<String, String>();
+                        params.put("token", token);
+                        params.put("user", userID);
+                        params.put("message", notification_full);
+                        params.put("title", package_name);
+
+                        return params;
+                    }
+
+                    @Override
+                    protected Response<String> parseNetworkResponse(NetworkResponse response) {
+                        Log.d(TAG, "Response code: " +response.statusCode);
+                        if (response.statusCode == HttpStatus.SC_OK)
+                            send_notification("Sending all notifications to Pushover");
+                        return super.parseNetworkResponse(response);
+                    }
+                };
+                RequestQueue requestQueue = Volley.newRequestQueue(context);
+                requestQueue.add(stringRequest);
 
             }
         }
