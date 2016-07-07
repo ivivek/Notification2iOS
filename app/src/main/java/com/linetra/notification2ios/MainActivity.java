@@ -1,7 +1,6 @@
 package com.linetra.notification2ios;
 
 import android.app.Activity;
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -9,7 +8,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.NotificationCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
@@ -93,8 +91,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
-        send_notification("Sending all notifications to Pushover");
     }
 
     @Override
@@ -147,18 +143,4 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
-
-    private void send_notification(String notification) {
-        Notification notif = new NotificationCompat.Builder(this)
-                .setContentTitle("Notification2iOS")
-                .setContentText(notification)
-                .setOnlyAlertOnce(true)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .build();
-        notif.flags |= Notification.FLAG_NO_CLEAR;
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationManager.notify(notificationID, notif);
-
-    }
-
 }

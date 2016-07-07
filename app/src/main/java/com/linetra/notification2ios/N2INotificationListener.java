@@ -2,11 +2,13 @@ package com.linetra.notification2ios;
 
 import android.app.Notification;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.service.notification.StatusBarNotification;
+import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -41,6 +43,7 @@ public class N2INotificationListener extends android.service.notification.Notifi
 
     private static String userID;
     private static String token;
+    public static int notificationID = 10001;
 
     public static final String PREFS_NAME = "N2I_PREFS";
     public static final String PREFS_USERID_KEY = "N2I_USERID";
@@ -50,6 +53,7 @@ public class N2INotificationListener extends android.service.notification.Notifi
     @Override
     public void onCreate() {
         Log.d(TAG, TAG + " Created");
+        send_notification("Sending all notifications to Pushover");
         SharedPreferences settings;
         settings = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         userID = settings.getString(PREFS_USERID_KEY, null);
@@ -124,7 +128,7 @@ public class N2INotificationListener extends android.service.notification.Notifi
                     public void onErrorResponse(VolleyError error) {
                         //Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_LONG).show();
                         Log.d(TAG, "HTTP POST Error: " + error.toString());
-                        //send_notification("Error sending notifications");
+                        send_notification("Error sending notifications");
                     }
                 }) {
             @Override
@@ -142,7 +146,7 @@ public class N2INotificationListener extends android.service.notification.Notifi
             protected Response<String> parseNetworkResponse(NetworkResponse response) {
                 Log.d(TAG, "Response code: " + response.statusCode);
                 if (response.statusCode == HttpStatus.SC_OK) {
-                    //send_notification("Sending all notifications to Pushover");
+                    send_notification("Sending all notifications to Pushover");
                     Log.i(TAG, "Sending all notifications to Pushover");
                 }
                 return super.parseNetworkResponse(response);
@@ -158,6 +162,20 @@ public class N2INotificationListener extends android.service.notification.Notifi
         else
             return true;
     }
+
+    private void send_notification(String notification) {
+        Notification notif = new NotificationCompat.Builder(this)
+                .setContentTitle("Notification2iOS")
+                .setContentText(notification)
+                .setOnlyAlertOnce(true)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .build();
+        notif.flags |= Notification.FLAG_NO_CLEAR;
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(notificationID, notif);
+
+    }
+
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
