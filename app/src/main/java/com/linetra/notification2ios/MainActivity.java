@@ -3,11 +3,8 @@ package com.linetra.notification2ios;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -20,21 +17,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.NetworkResponse;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-
-import org.apache.http.HttpStatus;
-
-import java.util.HashMap;
-import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -71,8 +55,6 @@ public class MainActivity extends AppCompatActivity {
                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                     PackageManager.DONT_KILL_APP);
         }
-
-        registerReceiver(N2IReceiver, makeIntentFilter());
 
         saveButton = (Button) findViewById(R.id.save_button);
         editText_userid = (EditText) findViewById(R.id.editText1);
@@ -119,7 +101,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
         super.onDestroy();
-        unregisterReceiver(N2IReceiver);
         String ns = Context.NOTIFICATION_SERVICE;
         NotificationManager nMgr = (NotificationManager) getApplicationContext().getSystemService(ns);
         nMgr.cancel(notificationID);
@@ -142,12 +123,6 @@ public class MainActivity extends AppCompatActivity {
         editor.putString(PREFS_USERID_KEY, userid);
         editor.putString(PREFS_TOKEN_KEY, token);
         editor.commit();
-    }
-
-    private static IntentFilter makeIntentFilter() {
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(N2INotificationListener.ACTION_NEW_NOTIFICATION);
-        return intentFilter;
     }
 
 
@@ -186,75 +161,4 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private final BroadcastReceiver N2IReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(final Context context, Intent intent) {
-            final String action = intent.getAction();
-            Log.d(TAG, "Entered BroadcastReceiver");
-            if (N2INotificationListener.ACTION_NEW_NOTIFICATION.equals(action)) {
-                Log.d(TAG, "ACTION_NEW_NOTIFICATION");
-                final String package_name = intent.getStringExtra(N2INotificationListener.PACKAGE_NAME);
-                String notification_text = intent.getStringExtra(N2INotificationListener.NOTIFICATION_TEXT);
-                String notification_title = intent.getStringExtra(N2INotificationListener.NOTIFICATION_TITLE);
-                String notification_subtext = intent.getStringExtra(N2INotificationListener.NOTIFICATION_SUBTEXT);
-
-                Log.d(TAG, "Package Name: " + package_name);
-                Log.d(TAG, "Notification: " + notification_text);
-
-                StringBuilder s = new StringBuilder();
-                if (notification_title != null) {
-                    s.append(notification_title);
-                }
-                if (notification_text != null) {
-                    s.append(" - ");
-                    s.append(notification_text);
-                }
-                if (notification_subtext != null) {
-                    s.append(" - ");
-                    s.append(notification_subtext);
-                }
-                final String notification_full = s.toString();
-
-                Log.d(TAG, "Calling Async task");
-
-                StringRequest stringRequest = new StringRequest(Request.Method.POST, PUSHOVER_REQUEST_URL,
-                        new Response.Listener<String>() {
-                            @Override
-                            public void onResponse(String response) {
-                                Log.d(TAG, "HTTP POST Response: " +response);
-                            }
-                        },
-                        new Response.ErrorListener() {
-                            @Override
-                            public void onErrorResponse(VolleyError error) {
-                                Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_LONG).show();
-                                Log.d(TAG, "HTTP POST Error: " +error.toString());
-                                send_notification("Error sending notifications");
-                            }
-                        }){
-                    @Override
-                    protected Map<String,String> getParams(){
-                        Map<String,String> params = new HashMap<String, String>();
-                        params.put("token", token);
-                        params.put("user", userID);
-                        params.put("message", notification_full);
-                        params.put("title", package_name);
-
-                        return params;
-                    }
-
-                    @Override
-                    protected Response<String> parseNetworkResponse(NetworkResponse response) {
-                        Log.d(TAG, "Response code: " +response.statusCode);
-                        if (response.statusCode == HttpStatus.SC_OK)
-                            send_notification("Sending all notifications to Pushover");
-                        return super.parseNetworkResponse(response);
-                    }
-                };
-                RequestQueue requestQueue = Volley.newRequestQueue(context);
-                requestQueue.add(stringRequest);
-
-            }
-        }
-    };
 }

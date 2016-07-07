@@ -2,10 +2,26 @@ package com.linetra.notification2ios;
 
 import android.app.Notification;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
+import android.widget.Toast;
+
+import com.android.volley.NetworkResponse;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.apache.http.HttpStatus;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class N2INotificationListener extends android.service.notification.NotificationListenerService {
     private static final String TAG = N2INotificationListener.class.getSimpleName();
@@ -21,11 +37,24 @@ public class N2INotificationListener extends android.service.notification.Notifi
             "com.linetra.notification2ios.NOTIFICATION_SUBTEXT";
     String appName;
 
+    private static final String PUSHOVER_REQUEST_URL = "https://api.pushover.net/1/messages.json";
+
+    private static String userID;
+    private static String token;
+
+    public static final String PREFS_NAME = "N2I_PREFS";
+    public static final String PREFS_USERID_KEY = "N2I_USERID";
+    public static final String PREFS_TOKEN_KEY = "N2I_TOKEN";
 
 
     @Override
     public void onCreate() {
         Log.d(TAG, TAG + " Created");
+        SharedPreferences settings;
+        settings = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        userID = settings.getString(PREFS_USERID_KEY, null);
+        token = settings.getString(PREFS_TOKEN_KEY, null);
+
     }
 
     @Override
@@ -49,15 +78,85 @@ public class N2INotificationListener extends android.service.notification.Notifi
             intent.putExtra(PACKAGE_NAME, sbnNew.getPackageName());
         }
 
-        // Skipping notification from this app
-        if (!appName.equals("Notification2iOS"))
-            sendBroadcast(intent);
+        if (is_app_allowed(appName)) {
+            Log.d(TAG, "onNotificationPosted: Application Name: " + appName);
+            Log.d(TAG, "onNotificationPosted: Title: " + sbnNew.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE));
+            Log.d(TAG, "onNotificationPosted: " + sbnNew.getPackageName()
+                    + ": " + sbnNew.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT));
+            Log.d(TAG, "onNotificationPosted:  Sub text: " + sbnNew.getNotification().extras.getCharSequence(Notification.EXTRA_SUB_TEXT));
 
-        Log.d(TAG, "onNotificationPosted: Application Name: " +appName);
-        Log.d(TAG, "onNotificationPosted: Title: " +sbnNew.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE));
-        Log.d(TAG, "onNotificationPosted: " + sbnNew.getPackageName()
-                + ": " + sbnNew.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT));
-        Log.d(TAG, "onNotificationPosted:  Sub text: " +sbnNew.getNotification().extras.getCharSequence(Notification.EXTRA_SUB_TEXT));
+
+            CharSequence notification_text = sbnNew.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT).toString();
+            CharSequence notification_title = sbnNew.getNotification().extras.getCharSequence(Notification.EXTRA_TITLE).toString();
+            CharSequence notification_subtext = sbnNew.getNotification().extras.getCharSequence(Notification.EXTRA_SUB_TEXT);
+
+            Log.d(TAG, "Notification: " + notification_text);
+
+            StringBuilder s = new StringBuilder();
+            if (notification_title != null) {
+                s.append(notification_title);
+            }
+            if (notification_text != null) {
+                s.append(" - ");
+                s.append(notification_text);
+            }
+            if (notification_subtext != null) {
+                s.append(" - ");
+                s.append(notification_subtext);
+            }
+            final String notification_full = s.toString();
+            send_notification_to_server(notification_full);
+
+        }
+
+    }
+
+    void send_notification_to_server(final String notification) {
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, PUSHOVER_REQUEST_URL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d(TAG, "HTTP POST Response: " + response);
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        //Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_LONG).show();
+                        Log.d(TAG, "HTTP POST Error: " + error.toString());
+                        //send_notification("Error sending notifications");
+                    }
+                }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("token", token);
+                params.put("user", userID);
+                params.put("message", notification);
+                params.put("title", appName);
+
+                return params;
+            }
+
+            @Override
+            protected Response<String> parseNetworkResponse(NetworkResponse response) {
+                Log.d(TAG, "Response code: " + response.statusCode);
+                if (response.statusCode == HttpStatus.SC_OK) {
+                    //send_notification("Sending all notifications to Pushover");
+                    Log.i(TAG, "Sending all notifications to Pushover");
+                }
+                return super.parseNetworkResponse(response);
+            }
+        };
+        RequestQueue requestQueue = Volley.newRequestQueue(getApplicationContext());
+        Log.d(TAG, "Sending to pushover");
+        requestQueue.add(stringRequest);
+    }
+    boolean is_app_allowed(String app_name) {
+        if (app_name.equals("Notification2iOS"))
+            return false;
+        else
+            return true;
     }
 
     @Override
