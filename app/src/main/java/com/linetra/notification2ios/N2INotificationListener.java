@@ -1,5 +1,6 @@
 package com.linetra.notification2ios;
 
+import android.app.KeyguardManager;
 import android.app.Notification;
 
 import android.app.NotificationManager;
@@ -157,6 +158,16 @@ public class N2INotificationListener extends android.service.notification.Notifi
         requestQueue.add(stringRequest);
     }
     boolean is_app_allowed(String app_name) {
+
+        KeyguardManager myKM = (KeyguardManager) getApplicationContext().getSystemService(Context.KEYGUARD_SERVICE);
+        if( myKM.inKeyguardRestrictedInputMode()) {
+            Log.d(TAG, "Screen Locked");
+        } else {
+            // Not sending notifications when Screen in unlocked
+            Log.d(TAG, "Screen is Unlocked: Not sending notification");
+            return false;
+        }
+
         if (app_name.equals("Notification2iOS"))
             return false;
         else
